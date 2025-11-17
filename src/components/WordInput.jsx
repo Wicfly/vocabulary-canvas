@@ -22,7 +22,9 @@ function WordInput({ onAddWord }) {
 
     try {
       const wordText = word.trim()
-      const isNoun = classifyWord(wordText) === 'noun'
+      // classifyWord is now async, so we need to await it
+      const wordClass = await classifyWord(wordText)
+      const isNoun = wordClass === 'noun'
       
       // Generate image and definition in parallel
       const [imageUrl, definition] = await Promise.all([
@@ -45,7 +47,11 @@ function WordInput({ onAddWord }) {
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       className="fixed top-6 left-1/2 z-50"
-      style={{ transform: 'translateX(-50%)' }}
+      style={{ 
+        transform: 'translateX(-50%)',
+        left: '50%',
+        right: 'auto'
+      }}
     >
       <div className="bg-white/90 backdrop-blur-md border border-black/10 rounded-2xl shadow-xl">
         <form onSubmit={handleSubmit} className="flex items-center gap-2 p-2">

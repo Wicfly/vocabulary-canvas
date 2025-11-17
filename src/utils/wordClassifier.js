@@ -36,24 +36,44 @@ const COMMON_ADJECTIVES = [
   'bright', 'dark', 'light', 'heavy', 'loud', 'quiet', 'noisy', 'silent'
 ]
 
-export const classifyWord = (word) => {
+// Use dictionary API to get accurate part of speech
+export const classifyWord = async (word) => {
   const lowerWord = word.toLowerCase().trim()
   
-  // Check if it's in our known noun list
-  if (COMMON_NOUN_PATTERNS.includes(lowerWord)) {
-    return 'noun'
-  }
-  
-  // Check if it's a known verb
+  // First check our known lists (fast)
   if (COMMON_VERBS.includes(lowerWord)) {
     return 'non-noun'
   }
   
-  // Check if it's a known adjective
   if (COMMON_ADJECTIVES.includes(lowerWord)) {
     return 'non-noun'
   }
   
+  if (COMMON_NOUN_PATTERNS.includes(lowerWord)) {
+    return 'noun'
+  }
+  
+  // Try to get accurate classification from dictionary API
+  try {
+    const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${lowerWord}`)
+    if (response.ok) {
+      const data = await response.json()
+      if (data && data[0] && data[0].meanings) {
+        // Check all meanings to find if any is a noun
+        for (const meaning of data[0].meanings) {
+          if (meaning.partOfSpeech === 'noun') {
+            return 'noun'
+          }
+        }
+        // If no noun found, it's non-noun
+        return 'non-noun'
+      }
+    }
+  } catch (error) {
+    console.warn('Dictionary API error, using heuristics:', error)
+  }
+  
+  // Fallback to heuristics
   // Check for common noun suffixes
   for (const suffix of COMMON_NOUN_SUFFIXES) {
     if (lowerWord.endsWith(suffix)) {
@@ -61,8 +81,8 @@ export const classifyWord = (word) => {
     }
   }
   
-  // Default heuristic: if word ends with 'ing', it's likely a verb/gerund
-  if (lowerWord.endsWith('ing')) {
+  // If word ends with 'ing', 'ed', 'ly', it's likely not a noun
+  if (lowerWord.endsWith('ing') || lowerWord.endsWith('ed') || lowerWord.endsWith('ly')) {
     return 'non-noun'
   }
   

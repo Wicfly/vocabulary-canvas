@@ -1,11 +1,13 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { speakText } from '../utils/textToSpeech'
 
 function VocabularyGallery({ words, onDelete }) {
+  const [playingWordId, setPlayingWordId] = useState(null)
   const [currentPage, setCurrentPage] = useState(0)
   const [hoverSide, setHoverSide] = useState(null) // 'left' or 'right'
   const bookRef = useRef(null)
-  const wordsPerPage = 6 // 左右各3个，共6个
+  const wordsPerPage = 2 // 左右各1个，共2个（放大显示）
   const totalPages = Math.ceil(words.length / wordsPerPage)
 
   const currentWords = words.slice(
@@ -13,8 +15,8 @@ function VocabularyGallery({ words, onDelete }) {
     (currentPage + 1) * wordsPerPage
   )
 
-  const leftPageWords = currentWords.slice(0, 3)
-  const rightPageWords = currentWords.slice(3, 6)
+  const leftPageWords = currentWords.slice(0, 1)
+  const rightPageWords = currentWords.slice(1, 2)
 
   const nextPage = () => {
     if (currentPage < totalPages - 1) {
@@ -77,7 +79,7 @@ function VocabularyGallery({ words, onDelete }) {
       <div className="h-full flex items-center justify-center p-8">
         <div
           ref={bookRef}
-          className="relative w-full max-w-6xl h-[80vh] book-container"
+          className="relative w-full max-w-7xl h-[85vh] book-container"
           onClick={handleBookClick}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
@@ -106,19 +108,75 @@ function VocabularyGallery({ words, onDelete }) {
                         key={word.id}
                         initial={{ scale: 0.95, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="flex items-start gap-3 p-3 hover:bg-white/50 rounded transition-colors"
+                        className="flex flex-col items-center gap-4 p-6 hover:bg-white/50 rounded-lg transition-colors"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <img
-                          src={word.imageUrl}
-                          alt={word.word}
-                          className="w-12 h-12 object-cover rounded border border-black/5 flex-shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm text-black mb-1">
-                            {word.word}
-                          </h3>
-                          <p className="text-xs text-black/50 line-clamp-2 mb-2">
+                        {word.isVideo && word.videoUrl ? (
+                          <div className="w-full max-w-2xl">
+                            <video
+                              src={word.videoUrl}
+                              controls
+                              className="w-full h-auto rounded-lg border border-black/10 shadow-md"
+                              style={{ maxHeight: '500px', minHeight: '300px' }}
+                              preload="metadata"
+                            >
+                              Your browser does not support the video tag.
+                            </video>
+                          </div>
+                        ) : (
+                          <div className="w-full max-w-2xl">
+                            <img
+                              src={word.imageUrl}
+                              alt={word.word}
+                              className="w-full h-auto object-cover rounded-lg border border-black/10 shadow-md"
+                              style={{ maxHeight: '500px', minHeight: '300px' }}
+                            />
+                          </div>
+                        )}
+                        <div className="flex-1 w-full text-center">
+                          <div className="flex items-center justify-center gap-2 mb-2">
+                            <h3 className="font-semibold text-lg text-black">
+                              {word.word}
+                            </h3>
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation()
+                                e.preventDefault()
+                                if (playingWordId === word.id) return
+                                
+                                setPlayingWordId(word.id)
+                                try {
+                                  console.log('Playing audio for:', word.word)
+                                  await speakText(word.word)
+                                  console.log('Audio played successfully')
+                                } catch (err) {
+                                  console.error('Failed to play audio:', err)
+                                  alert('播放失败，请检查控制台错误信息')
+                                } finally {
+                                  setPlayingWordId(null)
+                                }
+                              }}
+                              disabled={playingWordId === word.id}
+                              className="p-2 hover:bg-gray-100 rounded transition-colors disabled:opacity-50 cursor-pointer"
+                              title="播放发音"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className={`h-5 w-5 ${playingWordId === word.id ? 'text-blue-500' : 'text-black/40'}`}
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                          <p className="text-sm text-black/60 mb-3 line-clamp-3">
                             {word.definition}
                           </p>
                           <button
@@ -126,17 +184,17 @@ function VocabularyGallery({ words, onDelete }) {
                               e.stopPropagation()
                               onDelete(word.id, false)
                             }}
-                            className="text-xs text-black/40 hover:text-black/60 transition-colors"
+                            className="text-sm text-black/40 hover:text-black/60 transition-colors"
                           >
                             Delete
                           </button>
                         </div>
                       </motion.div>
                     ))}
-                    {leftPageWords.length < 3 && (
-                      Array.from({ length: 3 - leftPageWords.length }).map((_, i) => (
-                        <div key={`empty-left-${i}`} className="h-20" />
-                      ))
+                    {leftPageWords.length < 1 && (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-sm text-black/20">No words on this page</p>
+                      </div>
                     )}
                   </motion.div>
                 </AnimatePresence>
@@ -160,19 +218,75 @@ function VocabularyGallery({ words, onDelete }) {
                         key={word.id}
                         initial={{ scale: 0.95, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="flex items-start gap-3 p-3 hover:bg-white/50 rounded transition-colors"
+                        className="flex flex-col items-center gap-4 p-6 hover:bg-white/50 rounded-lg transition-colors"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <img
-                          src={word.imageUrl}
-                          alt={word.word}
-                          className="w-12 h-12 object-cover rounded border border-black/5 flex-shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm text-black mb-1">
-                            {word.word}
-                          </h3>
-                          <p className="text-xs text-black/50 line-clamp-2 mb-2">
+                        {word.isVideo && word.videoUrl ? (
+                          <div className="w-full max-w-2xl">
+                            <video
+                              src={word.videoUrl}
+                              controls
+                              className="w-full h-auto rounded-lg border border-black/10 shadow-md"
+                              style={{ maxHeight: '500px', minHeight: '300px' }}
+                              preload="metadata"
+                            >
+                              Your browser does not support the video tag.
+                            </video>
+                          </div>
+                        ) : (
+                          <div className="w-full max-w-2xl">
+                            <img
+                              src={word.imageUrl}
+                              alt={word.word}
+                              className="w-full h-auto object-cover rounded-lg border border-black/10 shadow-md"
+                              style={{ maxHeight: '500px', minHeight: '300px' }}
+                            />
+                          </div>
+                        )}
+                        <div className="flex-1 w-full text-center">
+                          <div className="flex items-center justify-center gap-2 mb-2">
+                            <h3 className="font-semibold text-lg text-black">
+                              {word.word}
+                            </h3>
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation()
+                                e.preventDefault()
+                                if (playingWordId === word.id) return
+                                
+                                setPlayingWordId(word.id)
+                                try {
+                                  console.log('Playing audio for:', word.word)
+                                  await speakText(word.word)
+                                  console.log('Audio played successfully')
+                                } catch (err) {
+                                  console.error('Failed to play audio:', err)
+                                  alert('播放失败，请检查控制台错误信息')
+                                } finally {
+                                  setPlayingWordId(null)
+                                }
+                              }}
+                              disabled={playingWordId === word.id}
+                              className="p-2 hover:bg-gray-100 rounded transition-colors disabled:opacity-50 cursor-pointer"
+                              title="播放发音"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className={`h-5 w-5 ${playingWordId === word.id ? 'text-blue-500' : 'text-black/40'}`}
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                          <p className="text-sm text-black/60 mb-3 line-clamp-3">
                             {word.definition}
                           </p>
                           <button
@@ -180,17 +294,17 @@ function VocabularyGallery({ words, onDelete }) {
                               e.stopPropagation()
                               onDelete(word.id, false)
                             }}
-                            className="text-xs text-black/40 hover:text-black/60 transition-colors"
+                            className="text-sm text-black/40 hover:text-black/60 transition-colors"
                           >
                             Delete
                           </button>
                         </div>
                       </motion.div>
                     ))}
-                    {rightPageWords.length < 3 && (
-                      Array.from({ length: 3 - rightPageWords.length }).map((_, i) => (
-                        <div key={`empty-right-${i}`} className="h-20" />
-                      ))
+                    {rightPageWords.length < 1 && (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-sm text-black/20">No words on this page</p>
+                      </div>
                     )}
                   </motion.div>
                 </AnimatePresence>

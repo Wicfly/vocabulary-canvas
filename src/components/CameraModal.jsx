@@ -1,7 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useLanguage } from '../contexts/LanguageContext'
+import { useTranslation } from '../utils/i18n'
 
 function CameraModal({ isOpen, onClose, onCapture }) {
+  const { language } = useLanguage()
+  const { t } = useTranslation(language)
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
@@ -33,7 +37,7 @@ function CameraModal({ isOpen, onClose, onCapture }) {
       }
     } catch (err) {
       console.error('Error accessing camera:', err)
-      setError('无法访问摄像头。请确保已授予摄像头权限。')
+      setError(t('camera.error'))
     }
   }
 
@@ -125,13 +129,13 @@ function CameraModal({ isOpen, onClose, onCapture }) {
                   onClick={retakePhoto}
                   className="px-6 py-2.5 bg-gray-200 text-gray-800 rounded-xl font-medium hover:bg-gray-300 transition-colors"
                 >
-                  重拍
+                  {t('camera.retake')}
                 </button>
                 <button
                   onClick={confirmPhoto}
                   className="px-6 py-2.5 bg-black text-white rounded-xl font-medium hover:bg-black/90 transition-colors"
                 >
-                  确认
+                  {t('camera.confirm')}
                 </button>
               </>
             ) : (
@@ -140,13 +144,13 @@ function CameraModal({ isOpen, onClose, onCapture }) {
                   onClick={onClose}
                   className="px-6 py-2.5 bg-gray-200 text-gray-800 rounded-xl font-medium hover:bg-gray-300 transition-colors"
                 >
-                  取消
+                  {t('camera.cancel')}
                 </button>
                 <button
                   onClick={capturePhoto}
                   className="px-6 py-2.5 bg-black text-white rounded-xl font-medium hover:bg-black/90 transition-colors"
                 >
-                  拍照
+                  {t('camera.capture')}
                 </button>
               </>
             )}
@@ -158,5 +162,6 @@ function CameraModal({ isOpen, onClose, onCapture }) {
 }
 
 export default CameraModal
+
 
 

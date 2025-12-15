@@ -61,13 +61,30 @@ export const classifyCategory = (word) => {
 
 /**
  * Get all available categories
+ * @param {string} language - Language code ('en' or 'zh')
  */
-export const getCategories = () => {
+export const getCategories = (language = 'en') => {
+  const translations = {
+    en: {
+      main: 'Main',
+      kitchen: 'Kitchen',
+      home: 'Home'
+    },
+    zh: {
+      main: '主',
+      kitchen: '厨房',
+      home: '家'
+    }
+  }
+  
+  const names = translations[language] || translations.en
+  
   return [
-    { id: 'main', name: 'Main', icon: '📋' },
-    { id: 'kitchen', name: 'Kitchen', icon: '🍳' },
-    { id: 'home', name: 'Home', icon: '🏠' }
+    { id: 'main', name: names.main, icon: '📋' },
+    { id: 'kitchen', name: names.kitchen, icon: '🍳' },
+    { id: 'home', name: names.home, icon: '🏠' }
   ]
 }
+
 
 

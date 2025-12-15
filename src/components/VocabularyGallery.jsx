@@ -125,19 +125,19 @@ function VocabularyGallery({ words, onDelete }) {
                           </div>
                         ) : (
                           <div className="w-full max-w-2xl">
-                            <img
-                              src={word.imageUrl}
-                              alt={word.word}
+                        <img
+                          src={word.imageUrl}
+                          alt={word.word}
                               className="w-full h-auto object-cover rounded-lg border border-black/10 shadow-md"
                               style={{ maxHeight: '500px', minHeight: '300px' }}
-                            />
+                        />
                           </div>
                         )}
                         <div className="flex-1 w-full text-center">
                           <div className="flex items-center justify-center gap-2 mb-2">
                             <h3 className="font-semibold text-lg text-black">
-                              {word.word}
-                            </h3>
+                            {word.word}
+                          </h3>
                             <button
                               onClick={async (e) => {
                                 e.stopPropagation()
@@ -235,19 +235,19 @@ function VocabularyGallery({ words, onDelete }) {
                           </div>
                         ) : (
                           <div className="w-full max-w-2xl">
-                            <img
-                              src={word.imageUrl}
-                              alt={word.word}
+                        <img
+                          src={word.imageUrl}
+                          alt={word.word}
                               className="w-full h-auto object-cover rounded-lg border border-black/10 shadow-md"
                               style={{ maxHeight: '500px', minHeight: '300px' }}
-                            />
+                        />
                           </div>
                         )}
                         <div className="flex-1 w-full text-center">
                           <div className="flex items-center justify-center gap-2 mb-2">
                             <h3 className="font-semibold text-lg text-black">
-                              {word.word}
-                            </h3>
+                            {word.word}
+                          </h3>
                             <button
                               onClick={async (e) => {
                                 e.stopPropagation()

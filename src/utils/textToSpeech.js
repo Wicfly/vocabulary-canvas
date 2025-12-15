@@ -9,11 +9,13 @@ const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY
  */
 export const textToSpeech = async (text) => {
   if (!OPENAI_API_KEY) {
-    console.warn('OpenAI API key not configured for TTS')
-    return null
+    const errorMsg = 'OpenAI API key not configured for TTS. Please check your .env file.'
+    console.error(errorMsg)
+    throw new Error(errorMsg)
   }
 
   try {
+    console.log('Sending TTS request for:', text)
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: {
@@ -30,14 +32,22 @@ export const textToSpeech = async (text) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error?.message || `TTS API error: ${response.status}`)
+      const errorMsg = errorData.error?.message || `TTS API error: ${response.status} ${response.statusText}`
+      console.error('TTS API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData
+      })
+      throw new Error(errorMsg)
     }
 
     // Get audio blob
     const audioBlob = await response.blob()
+    console.log('Audio blob received, size:', audioBlob.size)
     
     // Create a blob URL for playback
     const audioUrl = URL.createObjectURL(audioBlob)
+    console.log('Audio URL created:', audioUrl)
     
     return audioUrl
   } catch (error) {
@@ -54,17 +64,37 @@ export const playAudio = (audioUrl) => {
   return new Promise((resolve, reject) => {
     const audio = new Audio(audioUrl)
     
+    audio.onloadeddata = () => {
+      console.log('Audio loaded successfully')
+    }
+    
+    audio.oncanplay = () => {
+      console.log('Audio can play')
+    }
+    
     audio.onended = () => {
+      console.log('Audio playback ended')
       URL.revokeObjectURL(audioUrl) // Clean up blob URL after playback
       resolve()
     }
     
     audio.onerror = (error) => {
+      console.error('Audio playback error:', error)
+      console.error('Audio error details:', {
+        code: audio.error?.code,
+        message: audio.error?.message
+      })
       URL.revokeObjectURL(audioUrl) // Clean up on error
-      reject(error)
+      reject(new Error(`Audio playback failed: ${audio.error?.message || 'Unknown error'}`))
     }
     
-    audio.play().catch(reject)
+    audio.play().then(() => {
+      console.log('Audio playback started')
+    }).catch(error => {
+      console.error('Failed to start audio playback:', error)
+      URL.revokeObjectURL(audioUrl)
+      reject(error)
+    })
   })
 }
 
@@ -83,5 +113,6 @@ export const speakText = async (text) => {
     throw error
   }
 }
+
 
 

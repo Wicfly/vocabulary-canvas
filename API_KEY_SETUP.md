@@ -20,7 +20,16 @@ touch .env
 在 `.env` 文件中添加：
 
 ```env
+# OpenAI API Key
 VITE_OPENAI_API_KEY=your-api-key-here
+
+# Firebase Configuration (for authentication)
+VITE_FIREBASE_API_KEY=your-api-key-here
+VITE_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+VITE_FIREBASE_APP_ID=your-app-id
 ```
 
 **注意：**
@@ -78,6 +87,7 @@ npm run dev
 - `.env` - 本地环境变量（不提交到 Git）
 - `.env.example` - 示例文件（可选，可以提交）
 - `.gitignore` - Git 忽略规则
+- `FIREBASE_SETUP.md` - Firebase 详细配置指南
 
 ## 🆘 如果 API Key 泄露
 
@@ -100,4 +110,5 @@ npm run dev
 如有问题，请查看：
 - [OpenAI API 文档](https://platform.openai.com/docs)
 - [Vite 环境变量文档](https://vitejs.dev/guide/env-and-mode.html)
+
 

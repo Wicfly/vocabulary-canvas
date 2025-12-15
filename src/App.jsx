@@ -3,7 +3,10 @@ import WordInput from './components/WordInput'
 import Sidebar from './components/Sidebar'
 import NounCanvas from './components/NounCanvas'
 import VocabularyGallery from './components/VocabularyGallery'
+import Login from './components/Login'
+import { useAuth } from './contexts/AuthContext'
 import { loadFromStorage, saveToStorage } from './utils/storage'
+import { loadFromFirestore, saveToFirestore } from './utils/firestoreStorage'
 import { getWordDefinition, generateImage } from './utils/imageGenerator'
 import { classifyWord } from './utils/wordClassifier'
 import { recognizeImage } from './utils/imageRecognition'
@@ -12,44 +15,125 @@ import { generateVideo } from './utils/videoGenerator'
 import './App.css'
 
 function App() {
+  const { currentUser, loading: authLoading } = useAuth()
+  const [showLogin, setShowLogin] = useState(false)
+  
   // Store nouns by category: { main: [], kitchen: [], home: [] }
   const [nounsByCategory, setNounsByCategory] = useState({ main: [], kitchen: [], home: [] })
   const [nonNouns, setNonNouns] = useState([])
   const [currentView, setCurrentView] = useState('canvas') // 'canvas' or 'gallery'
   const [currentCategory, setCurrentCategory] = useState('main') // 'main', 'kitchen', 'home'
 
-  // Load data from localStorage on mount
+  // Load data from Firestore (if logged in) or localStorage (if not logged in)
   useEffect(() => {
-    const savedData = loadFromStorage()
-    if (savedData) {
-      // Support both old format (nouns array) and new format (nounsByCategory object)
-      if (savedData.nounsByCategory) {
-        setNounsByCategory(savedData.nounsByCategory)
-      } else if (savedData.nouns) {
-        // Migrate old data to new format
-        setNounsByCategory({ main: savedData.nouns || [], kitchen: [], home: [] })
+    const loadData = async () => {
+      if (currentUser) {
+        // Load from Firestore for logged-in users
+        const savedData = await loadFromFirestore(currentUser.uid)
+        if (savedData) {
+          if (savedData.nounsByCategory) {
+            setNounsByCategory(savedData.nounsByCategory)
+          } else if (savedData.nouns) {
+            setNounsByCategory({ main: savedData.nouns || [], kitchen: [], home: [] })
+          }
+          setNonNouns(savedData.nonNouns || [])
+        }
+      } else {
+        // Load from localStorage for guests
+        const savedData = loadFromStorage()
+        if (savedData) {
+          if (savedData.nounsByCategory) {
+            setNounsByCategory(savedData.nounsByCategory)
+          } else if (savedData.nouns) {
+            setNounsByCategory({ main: savedData.nouns || [], kitchen: [], home: [] })
+          }
+          setNonNouns(savedData.nonNouns || [])
+        }
       }
-      setNonNouns(savedData.nonNouns || [])
     }
-  }, [])
+    
+    if (!authLoading) {
+      loadData()
+    }
+  }, [currentUser, authLoading])
 
-  // Save to localStorage whenever data changes
+  // Save data to Firestore (if logged in) or localStorage (if not logged in)
   useEffect(() => {
-    saveToStorage({ nounsByCategory, nonNouns })
-  }, [nounsByCategory, nonNouns])
+    if (authLoading) return
+    
+    const saveData = async () => {
+      const data = { nounsByCategory, nonNouns }
+      
+      if (currentUser) {
+        // Save to Firestore for logged-in users
+        try {
+          await saveToFirestore(currentUser.uid, data)
+        } catch (error) {
+          console.error('Failed to save to Firestore, falling back to localStorage:', error)
+          saveToStorage(data)
+        }
+      } else {
+        // Save to localStorage for guests
+        saveToStorage(data)
+      }
+    }
+    
+    saveData()
+  }, [nounsByCategory, nonNouns, currentUser, authLoading])
   
-  // Get current category's nouns
-  const currentNouns = nounsByCategory[currentCategory] || []
+  // Note: All categories are now displayed on the same canvas, so we don't need currentNouns filter
 
   const handleAddWord = async (word, isNoun, imageUrl, definition) => {
-    // Calculate center position for new nouns
-    const centerX = isNoun ? window.innerWidth / 2 - 40 : 0
-    const centerY = isNoun ? window.innerHeight / 2 - 40 : 0
-    
     // Classify category for nouns
     let category = 'main'
     if (isNoun) {
       category = classifyCategory(word)
+    }
+
+    // Calculate position for new word
+    // If there are existing words in this category, place near them
+    // Otherwise, place in a default position for this category
+    let centerX = 0
+    let centerY = 0
+    
+    if (isNoun) {
+      // Use current state to get existing words
+      const categoryNouns = nounsByCategory[category] || []
+      if (categoryNouns.length > 0) {
+        // Calculate center of existing words in this category
+        const validNouns = categoryNouns.filter(n => n.x !== undefined && n.y !== undefined && n.x !== null && n.y !== null)
+        if (validNouns.length > 0) {
+          const avgX = validNouns.reduce((sum, n) => sum + (n.x || 0), 0) / validNouns.length
+          const avgY = validNouns.reduce((sum, n) => sum + (n.y || 0), 0) / validNouns.length
+          // Place new word near the center, offset by a small amount
+          centerX = avgX + (Math.random() - 0.5) * 200
+          centerY = avgY + (Math.random() - 0.5) * 200
+        } else {
+          // Fallback to default position (centered in viewport)
+          const viewportCenterX = window.innerWidth / 2
+          const viewportCenterY = window.innerHeight / 2
+          const categoryOffsets = {
+            main: { x: -200, y: 0 },
+            kitchen: { x: 200, y: 0 },
+            home: { x: 400, y: 0 }
+          }
+          const offset = categoryOffsets[category] || categoryOffsets.main
+          centerX = viewportCenterX + offset.x
+          centerY = viewportCenterY + offset.y
+        }
+      } else {
+        // Default positions for each category (centered in viewport, spaced horizontally)
+        const viewportCenterX = window.innerWidth / 2
+        const viewportCenterY = window.innerHeight / 2
+        const categoryOffsets = {
+          main: { x: -200, y: 0 },
+          kitchen: { x: 200, y: 0 },
+          home: { x: 400, y: 0 }
+        }
+        const offset = categoryOffsets[category] || categoryOffsets.main
+        centerX = viewportCenterX + offset.x
+        centerY = viewportCenterY + offset.y
+      }
     }
     
     // For non-nouns (adjectives/verbs), try to generate video
@@ -129,14 +213,56 @@ function App() {
         console.warn('Failed to get definition:', err)
       }
       
-      // Calculate center position for new nouns
-      const centerX = isNoun ? window.innerWidth / 2 - 40 : 0
-      const centerY = isNoun ? window.innerHeight / 2 - 40 : 0
-      
       // Classify category for nouns
       let category = 'main'
       if (isNoun) {
         category = classifyCategory(objectName)
+      }
+
+      // Calculate position for new word
+      let centerX = 0
+      let centerY = 0
+      
+      if (isNoun) {
+        const categoryNouns = nounsByCategory[category] || []
+        if (categoryNouns.length > 0) {
+          // Calculate center of existing words in this category
+          const validNouns = categoryNouns.filter(n => n.x !== undefined && n.y !== undefined && n.x !== null && n.y !== null)
+          if (validNouns.length > 0) {
+            const avgX = validNouns.reduce((sum, n) => sum + (n.x || 0), 0) / validNouns.length
+            const avgY = validNouns.reduce((sum, n) => sum + (n.y || 0), 0) / validNouns.length
+            // Place new word near the center, offset by a small amount
+            centerX = avgX + (Math.random() - 0.5) * 200
+            centerY = avgY + (Math.random() - 0.5) * 200
+          } else {
+            // Fallback to default position (centered in viewport)
+            const viewportCenterX = window.innerWidth / 2
+            const viewportCenterY = window.innerHeight / 2
+            const categoryOffsets = {
+              main: { x: -200, y: 0 },
+              kitchen: { x: 200, y: 0 },
+              home: { x: 400, y: 0 }
+            }
+            const offset = categoryOffsets[category] || categoryOffsets.main
+            centerX = viewportCenterX + offset.x
+            centerY = viewportCenterY + offset.y
+          }
+        } else {
+          // Default positions for each category (centered in viewport, spaced horizontally)
+          // Use canvas coordinates (not viewport coordinates)
+          // Since canvas will be centered, we place words relative to viewport center
+          const viewportCenterX = typeof window !== 'undefined' ? window.innerWidth / 2 : 960
+          const viewportCenterY = typeof window !== 'undefined' ? window.innerHeight / 2 : 540
+          const categoryOffsets = {
+            main: { x: -200, y: 0 },
+            kitchen: { x: 200, y: 0 },
+            home: { x: 400, y: 0 }
+          }
+          const offset = categoryOffsets[category] || categoryOffsets.main
+          centerX = viewportCenterX + offset.x
+          centerY = viewportCenterY + offset.y
+          console.log('Creating new word at:', { centerX, centerY, category, viewportCenterX, viewportCenterY })
+        }
       }
       
       // Use the photo as a regular image
@@ -188,13 +314,37 @@ function App() {
     }
   }
 
-  const handleUpdateNounPosition = (id, x, y) => {
-    setNounsByCategory(prev => ({
-      ...prev,
-      [currentCategory]: (prev[currentCategory] || []).map(word => 
-        word.id === id ? { ...word, x, y } : word
-      )
-    }))
+  const handleUpdateNounPosition = (id, x, y, category = null) => {
+    setNounsByCategory(prev => {
+      const updated = { ...prev }
+      // If category is provided, update in that category
+      // Otherwise, search all categories
+      if (category) {
+        updated[category] = (updated[category] || []).map(word => 
+          word.id === id ? { ...word, x, y } : word
+        )
+      } else {
+        // Search all categories
+        Object.keys(updated).forEach(cat => {
+          updated[cat] = (updated[cat] || []).map(word => 
+            word.id === id ? { ...word, x, y } : word
+          )
+        })
+      }
+      return updated
+    })
+  }
+
+  // Show loading state while auth is initializing
+  if (authLoading) {
+    return (
+      <div className="fixed inset-0 w-full h-full flex items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-black/60">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -211,13 +361,15 @@ function App() {
         onViewChange={setCurrentView}
         currentCategory={currentCategory}
         onCategoryChange={setCurrentCategory}
+        currentUser={currentUser}
+        onLoginClick={() => setShowLogin(true)}
       />
 
       {/* Main Content */}
       {currentView === 'canvas' ? (
         <NounCanvas
-          nouns={currentNouns}
-          onDelete={(id) => handleDeleteWord(id, true, currentCategory)}
+          nounsByCategory={nounsByCategory}
+          onDelete={handleDeleteWord}
           onUpdatePosition={handleUpdateNounPosition}
         />
       ) : (
@@ -226,6 +378,9 @@ function App() {
           onDelete={handleDeleteWord}
         />
       )}
+
+      {/* Login Modal */}
+      {showLogin && <Login onClose={() => setShowLogin(false)} />}
     </div>
   )
 }

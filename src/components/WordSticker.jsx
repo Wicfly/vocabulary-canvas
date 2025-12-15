@@ -27,15 +27,44 @@ function WordSticker({ word, onDelete, onUpdatePosition }) {
 
   const handleMouseDown = (e) => {
     e.preventDefault()
+    e.stopPropagation()
     setIsDragging(true)
-    const startX = e.clientX - position.x
-    const startY = e.clientY - position.y
-    let currentPos = { x: position.x, y: position.y }
+    
+    // Get initial mouse and sticker positions
+    const startMouseX = e.clientX
+    const startMouseY = e.clientY
+    const startStickerX = position.x
+    const startStickerY = position.y
+    
+    let currentPos = { x: startStickerX, y: startStickerY }
 
     const handleMouseMove = (e) => {
-      const newX = e.clientX - startX
-      const newY = e.clientY - startY
-      currentPos = { x: newX, y: newY }
+      // Get the canvas element to calculate proper coordinates
+      const canvasElement = stickerRef.current?.closest('.relative.dot-grid')
+      if (!canvasElement) return
+      
+      const canvasRect = canvasElement.getBoundingClientRect()
+      
+      // Calculate mouse position relative to canvas
+      const mouseCanvasX = e.clientX - canvasRect.left
+      const mouseCanvasY = e.clientY - canvasRect.top
+      
+      // Calculate initial sticker position relative to canvas
+      const startCanvasX = startStickerX
+      const startCanvasY = startStickerY
+      
+      // Calculate the initial mouse position relative to canvas
+      const startMouseCanvasX = startMouseX - canvasRect.left
+      const startMouseCanvasY = startMouseY - canvasRect.top
+      
+      // Calculate new position
+      const deltaX = mouseCanvasX - startMouseCanvasX
+      const deltaY = mouseCanvasY - startMouseCanvasY
+      
+      currentPos = { 
+        x: Math.max(0, startCanvasX + deltaX), 
+        y: Math.max(0, startCanvasY + deltaY) 
+      }
       setPosition(currentPos)
     }
 
@@ -55,9 +84,11 @@ function WordSticker({ word, onDelete, onUpdatePosition }) {
       ref={stickerRef}
       className="absolute cursor-move"
       style={{
-        left: position.x,
-        top: position.y,
+        left: `${position.x}px`,
+        top: `${position.y}px`,
         zIndex: isDragging ? 1000 : 1,
+        width: '80px',
+        height: '80px',
       }}
       initial={{ scale: 0 }}
       animate={{ scale: 1 }}
@@ -81,12 +112,17 @@ function WordSticker({ word, onDelete, onUpdatePosition }) {
         }, 200)
       }}
     >
-      <div className="relative">
+      <div className="relative w-full h-full">
         <img
           src={word.imageUrl}
           alt={word.word}
-          className="w-20 h-20 object-cover rounded-lg border border-black/10 shadow-sm hover:shadow-md transition-shadow"
+          className="w-full h-full object-cover rounded-lg border border-black/10 shadow-sm hover:shadow-md transition-shadow"
           draggable={false}
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'block',
+          }}
         />
         
         {showTooltip && (
@@ -117,11 +153,17 @@ function WordSticker({ word, onDelete, onUpdatePosition }) {
                   setIsPlaying(true)
                   try {
                     console.log('Playing audio for:', word.word)
+                    console.log('API Key exists:', !!import.meta.env.VITE_OPENAI_API_KEY)
                     await speakText(word.word)
                     console.log('Audio played successfully')
                   } catch (err) {
                     console.error('Failed to play audio:', err)
-                    alert('播放失败，请检查控制台错误信息')
+                    console.error('Error details:', {
+                      message: err.message,
+                      stack: err.stack,
+                      apiKey: import.meta.env.VITE_OPENAI_API_KEY ? 'Present' : 'Missing'
+                    })
+                    alert(`播放失败: ${err.message || '未知错误'}，请检查控制台错误信息`)
                   } finally {
                     setIsPlaying(false)
                   }

@@ -108,23 +108,27 @@ function App() {
           // Place new word near the center, offset by a small amount
           centerX = avgX + (Math.random() - 0.5) * 200
           centerY = avgY + (Math.random() - 0.5) * 200
-        } else {
-          // Fallback to default position (centered in viewport)
-          const viewportCenterX = window.innerWidth / 2
-          const viewportCenterY = window.innerHeight / 2
-          const categoryOffsets = {
-            main: { x: -200, y: 0 },
-            kitchen: { x: 200, y: 0 },
-            home: { x: 400, y: 0 }
+          } else {
+            // Fallback to default position (centered in viewport)
+            const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1920
+            const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 1080
+            const viewportCenterX = viewportWidth / 2
+            const viewportCenterY = viewportHeight / 2
+            const categoryOffsets = {
+              main: { x: -200, y: 0 },
+              kitchen: { x: 200, y: 0 },
+              home: { x: 400, y: 0 }
+            }
+            const offset = categoryOffsets[category] || categoryOffsets.main
+            centerX = viewportCenterX + offset.x
+            centerY = viewportCenterY + offset.y
           }
-          const offset = categoryOffsets[category] || categoryOffsets.main
-          centerX = viewportCenterX + offset.x
-          centerY = viewportCenterY + offset.y
-        }
-      } else {
-        // Default positions for each category (centered in viewport, spaced horizontally)
-        const viewportCenterX = window.innerWidth / 2
-        const viewportCenterY = window.innerHeight / 2
+        } else {
+          // Default positions for each category (centered in viewport, spaced horizontally)
+          const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1920
+          const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 1080
+          const viewportCenterX = viewportWidth / 2
+          const viewportCenterY = viewportHeight / 2
         const categoryOffsets = {
           main: { x: -200, y: 0 },
           kitchen: { x: 200, y: 0 },
@@ -236,8 +240,10 @@ function App() {
             centerY = avgY + (Math.random() - 0.5) * 200
           } else {
             // Fallback to default position (centered in viewport)
-            const viewportCenterX = window.innerWidth / 2
-            const viewportCenterY = window.innerHeight / 2
+            const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1920
+            const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 1080
+            const viewportCenterX = viewportWidth / 2
+            const viewportCenterY = viewportHeight / 2
             const categoryOffsets = {
               main: { x: -200, y: 0 },
               kitchen: { x: 200, y: 0 },

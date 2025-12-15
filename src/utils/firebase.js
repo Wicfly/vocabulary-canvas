@@ -1,5 +1,5 @@
 // Firebase Configuration and Initialization
-import { initializeApp } from 'firebase/app'
+import { initializeApp, getApps } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
@@ -13,12 +13,40 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig)
+// Check if Firebase config is complete
+const isFirebaseConfigured = 
+  firebaseConfig.apiKey &&
+  firebaseConfig.authDomain &&
+  firebaseConfig.projectId &&
+  firebaseConfig.storageBucket &&
+  firebaseConfig.messagingSenderId &&
+  firebaseConfig.appId
 
-// Initialize Firebase services
-export const auth = getAuth(app)
-export const db = getFirestore(app)
+// Initialize Firebase only if configured, otherwise use a mock
+let app = null
+let auth = null
+let db = null
 
+if (isFirebaseConfigured) {
+  try {
+    // Initialize Firebase only if not already initialized
+    if (getApps().length === 0) {
+      app = initializeApp(firebaseConfig)
+    } else {
+      app = getApps()[0]
+    }
+    auth = getAuth(app)
+    db = getFirestore(app)
+  } catch (error) {
+    console.error('Firebase initialization error:', error)
+    console.warn('Firebase is not available. App will run without authentication.')
+  }
+} else {
+  console.warn('Firebase configuration is incomplete. App will run without authentication.')
+  console.warn('To enable Firebase, please set the required environment variables in Vercel.')
+}
+
+// Export Firebase services (may be null if not configured)
+export { auth, db }
 export default app
 

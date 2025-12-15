@@ -9,6 +9,11 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 
+// Check if Firestore is available
+const isFirestoreAvailable = () => {
+  return db !== null && db !== undefined
+}
+
 /**
  * Save user data to Firestore
  * @param {string} userId - User ID
@@ -18,6 +23,11 @@ export const saveToFirestore = async (userId, data) => {
   if (!userId) {
     console.warn('Cannot save to Firestore: No user ID')
     return
+  }
+
+  if (!isFirestoreAvailable()) {
+    console.warn('Firestore is not available. Data will not be saved.')
+    throw new Error('Firestore is not configured')
   }
 
   try {
@@ -48,6 +58,11 @@ export const loadFromFirestore = async (userId) => {
     return null
   }
 
+  if (!isFirestoreAvailable()) {
+    console.warn('Firestore is not available. Cannot load data.')
+    return null
+  }
+
   try {
     const userDocRef = doc(db, 'users', userId)
     const docSnap = await getDoc(userDocRef)
@@ -73,6 +88,11 @@ export const updateFirestore = async (userId, updates) => {
   if (!userId) {
     console.warn('Cannot update Firestore: No user ID')
     return
+  }
+
+  if (!isFirestoreAvailable()) {
+    console.warn('Firestore is not available. Cannot update data.')
+    throw new Error('Firestore is not configured')
   }
 
   try {

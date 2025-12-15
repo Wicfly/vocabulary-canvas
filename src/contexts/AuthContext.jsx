@@ -29,6 +29,7 @@ export const AuthProvider = ({ children }) => {
 
   // Sign up with email and password
   const signup = async (email, password, displayName = null) => {
+    if (!auth) throw new Error('Firebase authentication is not configured')
     const userCredential = await createUserWithEmailAndPassword(auth, email, password)
     if (displayName && userCredential.user) {
       await updateProfile(userCredential.user, { displayName })
@@ -38,39 +39,58 @@ export const AuthProvider = ({ children }) => {
 
   // Sign in with email and password
   const login = (email, password) => {
+    if (!auth) throw new Error('Firebase authentication is not configured')
     return signInWithEmailAndPassword(auth, email, password)
   }
 
   // Sign in with Google
   const signInWithGoogle = async () => {
+    if (!auth) throw new Error('Firebase authentication is not configured')
     const provider = new GoogleAuthProvider()
     return signInWithPopup(auth, provider)
   }
 
   // Sign in with GitHub
   const signInWithGitHub = async () => {
+    if (!auth) throw new Error('Firebase authentication is not configured')
     const provider = new GithubAuthProvider()
     return signInWithPopup(auth, provider)
   }
 
   // Sign out
   const logout = () => {
+    if (!auth) return Promise.resolve()
     return signOut(auth)
   }
 
   // Reset password
   const resetPassword = (email) => {
+    if (!auth) throw new Error('Firebase authentication is not configured')
     return sendPasswordResetEmail(auth, email)
   }
 
   // Listen to auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user)
+    if (!auth) {
+      // If Firebase is not configured, skip auth and mark as not loading
       setLoading(false)
-    })
+      return
+    }
 
-    return unsubscribe
+    try {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        setCurrentUser(user)
+        setLoading(false)
+      }, (error) => {
+        console.error('Auth state change error:', error)
+        setLoading(false)
+      })
+
+      return unsubscribe
+    } catch (error) {
+      console.error('Error setting up auth state listener:', error)
+      setLoading(false)
+    }
   }, [])
 
   const value = {

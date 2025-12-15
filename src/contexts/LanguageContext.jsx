@@ -14,12 +14,18 @@ export const useLanguage = () => {
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguage] = useState(() => {
     // Load from localStorage or default to 'en'
-    const saved = localStorage.getItem('language')
-    return saved || 'en'
+    // Check if we're in browser environment
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('language')
+      return saved || 'en'
+    }
+    return 'en'
   })
 
   useEffect(() => {
-    localStorage.setItem('language', language)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('language', language)
+    }
   }, [language])
 
   const toggleLanguage = () => {

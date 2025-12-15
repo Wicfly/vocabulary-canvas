@@ -16,19 +16,23 @@ function NounCanvas({ nounsByCategory, onDelete, onUpdatePosition }) {
 
   // Load user position from localStorage
   useEffect(() => {
-    const savedPosition = localStorage.getItem('userPosition')
-    if (savedPosition) {
-      try {
-        setUserPosition(JSON.parse(savedPosition))
-      } catch (e) {
-        console.warn('Failed to load user position')
+    if (typeof window !== 'undefined') {
+      const savedPosition = localStorage.getItem('userPosition')
+      if (savedPosition) {
+        try {
+          setUserPosition(JSON.parse(savedPosition))
+        } catch (e) {
+          console.warn('Failed to load user position')
+        }
       }
     }
   }, [])
 
   // Save user position to localStorage
   useEffect(() => {
-    localStorage.setItem('userPosition', JSON.stringify(userPosition))
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('userPosition', JSON.stringify(userPosition))
+    }
   }, [userPosition])
 
   // Combine all nouns from all categories
@@ -103,14 +107,17 @@ function NounCanvas({ nounsByCategory, onDelete, onUpdatePosition }) {
     const bounds = [mainBounds, kitchenBounds, homeBounds].filter(Boolean)
     
     // Default canvas size (centered around viewport)
-    const viewportCenterX = window.innerWidth / 2
-    const viewportCenterY = window.innerHeight / 2
-    let contentMinX = viewportCenterX - window.innerWidth
-    let contentMinY = viewportCenterY - window.innerHeight
-    let contentMaxX = viewportCenterX + window.innerWidth
-    let contentMaxY = viewportCenterY + window.innerHeight
-    let width = window.innerWidth * 2
-    let height = window.innerHeight * 2
+    // Check if we're in browser environment
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1920
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 1080
+    const viewportCenterX = viewportWidth / 2
+    const viewportCenterY = viewportHeight / 2
+    let contentMinX = viewportCenterX - viewportWidth
+    let contentMinY = viewportCenterY - viewportHeight
+    let contentMaxX = viewportCenterX + viewportWidth
+    let contentMaxY = viewportCenterY + viewportHeight
+    let width = viewportWidth * 2
+    let height = viewportHeight * 2
 
     if (bounds.length > 0) {
       // Calculate content bounds from actual word positions
@@ -134,8 +141,8 @@ function NounCanvas({ nounsByCategory, onDelete, onUpdatePosition }) {
       contentMaxY = maxY + canvasPadding
 
       // Ensure minimum size
-      width = Math.max(contentMaxX - contentMinX, window.innerWidth)
-      height = Math.max(contentMaxY - contentMinY, window.innerHeight)
+      width = Math.max(contentMaxX - contentMinX, viewportWidth)
+      height = Math.max(contentMaxY - contentMinY, viewportHeight)
     }
 
     // Keep canvas offset at (0, 0) - words are positioned relative to viewport center

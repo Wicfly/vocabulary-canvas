@@ -1,0 +1,159 @@
+# PRD — Vocabulary Canvas (MVP Draft)
+
+A minimal, aesthetic tool for visually learning vocabulary using AI-generated images.
+
+---
+
+## 1. Product Name
+
+**Vocabulary Canvas**
+
+A visual vocabulary board powered by AI-generated imagery.
+
+---
+
+## 2. Problem Statement
+
+Traditional vocabulary-learning tools often rely heavily on text and lack visual engagement. For many learners—especially visual thinkers—images significantly improve recall. However, searching for matching images manually is time-consuming. Users need a tool that automatically visualizes the words they are learning and organizes them in an intuitive, beautiful way.
+
+---
+
+## 3. Target Users
+
+- English learners
+- Visual learners
+- Designers or creators who enjoy aesthetic tools
+- Students building daily vocabulary habits
+
+---
+
+## 4. Core Value Proposition
+
+A playful, creative workspace where users can collect vocabulary, generate AI-based illustrations, and visually arrange their words like stickers on a canvas. This transforms language learning into a more tactile and memorable experience.
+
+---
+
+## 5. Product Overview
+
+The product consists of two interconnected spaces:
+
+### A. Vocabulary Canvas (Noun Canvas)
+
+A blank dot-grid board where noun words appear as draggable visual stickers.
+
+**Each sticker includes:**
+- A 2D AI-generated image (e.g., "chair" → chair illustration)
+- Tooltip on hover:
+  - Word
+  - Definition
+  - Example sentence (optional MVP+)
+
+Users can rearrange words freely to build a "visual vocabulary landscape."
+
+### B. Vocabulary Gallery (Verb/Adjective/Other Words)
+
+Non-noun words are stored in a book-style gallery.
+
+**Features:**
+- AI visualization (abstract or symbolic illustration)
+- Pages flip with a smooth book-flip animation
+- Each page contains 1–3 words with corresponding images
+- A "book on a desk" aesthetic for inspiration
+
+---
+
+## 6. User Stories (MVP)
+
+As a user, I want to…
+
+- Add a new vocabulary word so I can grow my vocabulary collection.
+- Generate an image using an AI API (e.g., OpenAI Images, Stability, Replicate) based on my word.
+- Place noun images on a canvas and rearrange them freely.
+- Hover on an image to see the word and its definition.
+- View non-noun words in a separate gallery with page-flip interaction.
+- Save my vocabulary board locally (LocalStorage) so I don't lose progress.
+
+---
+
+## 7. Core Features (MVP Scope)
+
+### 1. Word Input + Classification
+- Text input for adding new vocabulary
+- Simple part-of-speech detection (noun vs. non-noun, using a small dictionary or API)
+
+### 2. AI Image Generation (Essential Feature)
+- Use a lightweight API to generate 2D illustrations based on the word
+- The image is returned as PNG/JPG
+- Add as a "vocabulary sticker"
+
+### 3. Vocabulary Canvas (for Nouns)
+- Dot-grid layout (Apple Notes vibes)
+- Drag-and-drop stickers
+- Hover tooltip with:
+  - Word
+  - Definition
+  - Delete/Edit button
+
+### 4. Vocabulary Gallery (for Non-Nouns)
+- Book-like interface
+- Page flipping (CSS or GSAP animation)
+- Each page displays word + generated image
+- Scroll or arrow navigation
+
+### 5. Local Saving
+- Save:
+  - Word list
+  - Image URLs
+  - Canvas positions
+  - Gallery page order
+- No backend needed—LocalStorage is enough for MVP
+
+---
+
+## 8. Non-Goals (Not in MVP)
+
+- User login system
+- Cloud sync
+- Flashcard mode
+- Quizzes
+- Complex AI explanation generation
+
+---
+
+## 9. Technical Stack Proposal
+
+### Frontend
+- React (ideal for interactive UI)
+- Canvas or DOM-based drag-and-drop (e.g., react-dnd or custom implementation)
+- CSS / Tailwind for styling
+- Framer Motion for smooth animations
+
+### AI Connection
+- OpenAI Images API（最简单，效果稳定）
+- or Stable Diffusion API
+
+### Storage
+- LocalStorage (MVP)
+
+### Deployment
+- GitHub Pages
+
+---
+
+## 10. Success Metrics
+
+- User adds at least 3 words in their first session
+- User returns within 2 days (tracked via local timestamps)
+- Average time spent ≥ 2 minutes
+- At least 70% of added words successfully generate images
+
+---
+
+## 11. Future Expansion
+
+- Flashcards mode
+- AI-generated example sentences
+- Word packs (TOEFL/IELTS themes)
+- Export canvas as an image or PDF
+- Multi-language support
+- Mobile version
